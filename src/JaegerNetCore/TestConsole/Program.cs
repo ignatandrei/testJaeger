@@ -57,11 +57,12 @@ namespace TestConsole
 
             using (var span = tracer.StartActiveSpanFromActivity(activity.OperationName, activity, SpanKind.Client, out ts))
             {
-                ts.SetAttribute("orgId", "test backend" + DateTime.Now.Ticks);
+                ts.SetAttribute("orgId", "test console" + DateTime.Now.Ticks);
                 var response = hc.GetStringAsync("WeatherForecast").GetAwaiter().GetResult();
                 Console.WriteLine(response);
                 activity.Stop();
             }
+            //wait for jaeger to send data
             Console.ReadLine();
 
         }
