@@ -1,5 +1,14 @@
-﻿using System;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using OpenTelemetry.Exporter.Jaeger;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
+using OpenTelemetry.Trace.Configuration;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+using System.Net.Http;
 
 namespace TestConsole
 {
@@ -8,17 +17,53 @@ namespace TestConsole
         static void Main(string[] args)
         {
             Console.WriteLine("Hello World!");
-            var activity = new Activity("test");
-            //TODO: add jaeger, open telemetry, others
-            /*
-             * while($true){
-$x= docker run -d --name jaeger   -e COLLECTOR_ZIPKIN_HTTP_PORT=9411   -p 5775:5775/udp   -p 6831:6831/udp   -p 6832:6832/udp   -p 5778:5778   -p 16686:16686  -p 14268:14268  -p 14250:14250  -p 9411:9411   jaegertracing/all-in-one:1.18
-Write-Host 'asasd' $x
-echo http://localhost:16686
-pause
-docker container rm $x -f
-}
-             */
+
+            var hc = new HttpClient();
+            hc.BaseAddress = new Uri("http://localhost:5000/");
+
+            var opt = new JaegerExporterOptions();
+            var config = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json", true, true)
+                .Build();
+
+            var serviceProvider = new ServiceCollection()
+                    .AddLogging()
+                    .AddSingleton<IConfiguration>(config)
+                    .AddOpenTelemetry(b =>
+                    {
+                        b//.AddRequestAdapter()
+                       .UseJaeger(c =>
+                       {
+                           var s = config.GetSection("Jaeger");
+
+                           s.Bind(c);
+
+
+                       });
+                        var x = new Dictionary<string, object>() {
+                            { "PC", Environment.MachineName } };
+                        b.SetResource(new Resource(x.ToArray()));
+
+                    }).BuildServiceProvider();
+            var f = serviceProvider.GetRequiredService<TracerFactoryBase>();
+            var tracer = f.GetTracer("custom");
+
+            var activity = new Activity("I am from console").Start();
+
+            activity.AddBaggage("MyTraceId", activity.TraceId.ToHexString());
+            activity.AddBaggage("MySpanId", activity.SpanId.ToHexString());
+            activity.AddTag("fromConsole", "Console");
+            TelemetrySpan ts;//= tracer.StartSpanFromActivity("muop", activity);
+
+            using (var span = tracer.StartActiveSpanFromActivity(activity.OperationName, activity, SpanKind.Client, out ts))
+            {
+                ts.SetAttribute("orgId", "test backend" + DateTime.Now.Ticks);
+                var response = hc.GetStringAsync("WeatherForecast").GetAwaiter().GetResult();
+                Console.WriteLine(response);
+                activity.Stop();
+            }
+            Console.ReadLine();
+
         }
     }
 }
