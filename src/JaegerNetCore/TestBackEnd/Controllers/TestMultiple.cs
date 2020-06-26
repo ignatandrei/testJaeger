@@ -89,7 +89,7 @@ namespace TestBackEnd.Controllers
 
         private Task<int> SecondAction(string fromWhere)
         {
-            var activity = GetCurrentAction(nameof(SecondAction)+ fromWhere);
+            var activity = GetCurrentAction(nameof(SecondAction)+" from "+ fromWhere);
             activity.AddTag("action", nameof(SecondAction));
             TelemetrySpan ts;
 
