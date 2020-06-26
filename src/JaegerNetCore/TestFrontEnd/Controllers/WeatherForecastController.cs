@@ -61,7 +61,7 @@ namespace TestFrontEnd.Controllers
             using (var span = tracer.StartActiveSpanFromActivity(activity.OperationName, activity, SpanKind.Client, out ts))
             {
 
-                ts.SetAttribute("orgId", "test backend" + DateTime.Now.Ticks);
+                ts.SetAttribute("orgId", "test frontend" + DateTime.Now.Ticks);
                 var response = await this.httpClient.GetStringAsync("WeatherForecast");
 
                 activity.Stop();
