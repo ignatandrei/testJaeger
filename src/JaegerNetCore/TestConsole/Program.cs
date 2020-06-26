@@ -64,8 +64,10 @@ namespace TestConsole
                 Console.WriteLine(response);
                 activity.Stop();
             }
+            Console.WriteLine("waiting for jaeger to send data");
             //wait for jaeger to send data
             Console.ReadLine();
+            Console.WriteLine("starting to send multiple data- please wait");
 
             // test multiple async
             var activityMultiple = new Activity("Multiple from console").Start();
@@ -81,6 +83,7 @@ namespace TestConsole
                 var total = MultipleRequests().GetAwaiter().GetResult();
                 activity.Stop();
             }
+            Console.WriteLine("sent multiple data");
             //wait for jaeger to send data
             Console.ReadLine();
 
@@ -91,7 +94,7 @@ namespace TestConsole
 
                 it =>
                 {
-                    string url = "TestMultiple";
+                    string url = "api/TestMultiple/";
                     url += (it % 2 == 0) ? "WaitFirst" : "GetActivityFirst";
                     return MakeRequest(url);
                 }

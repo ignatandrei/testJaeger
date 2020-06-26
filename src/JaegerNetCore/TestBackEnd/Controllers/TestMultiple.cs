@@ -58,8 +58,9 @@ namespace TestBackEnd.Controllers
             using (var span = tracer.StartActiveSpanFromActivity(activity.OperationName, activity, SpanKind.Client, out ts))
             {
 
+                await SecondAction(nameof(WaitFirst));
                 activity.Stop();
-                return $"This is ";
+                return $"This is " ;
                 
             }
         }
@@ -79,15 +80,16 @@ namespace TestBackEnd.Controllers
 
             using (var span = tracer.StartActiveSpanFromActivity(activity.OperationName, activity, SpanKind.Client, out ts))
             {
+                await SecondAction(nameof(GetActivityFirst));
                 activity.Stop();
-                return "This is {id}";
+                return "This is ";
                 
             }
         }
 
-        private Task<int> SecondAction()
+        private Task<int> SecondAction(string fromWhere)
         {
-            var activity = GetCurrentAction(nameof(SecondAction));
+            var activity = GetCurrentAction(nameof(SecondAction)+ fromWhere);
             activity.AddTag("action", nameof(SecondAction));
             TelemetrySpan ts;
 
