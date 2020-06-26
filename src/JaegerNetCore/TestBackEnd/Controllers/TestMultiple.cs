@@ -39,20 +39,19 @@ namespace TestBackEnd.Controllers
 
 
         }
-        public TestMultiple(TracerFactoryBase tracerFactory)
+        public TestMultipleController(TracerFactoryBase tracerFactory)
         {
             this.tracer = tracerFactory.GetTracer("TestMultiple");
         }
 
-        [HttpGet("{id}")]
-        public async Task<string> WaitFirst( string id)
+        [HttpGet()]
+        public async Task<string> WaitFirst()
         {
             var rng = new Random();
             var val = rng.Next(5, 15);
             await Task.Delay(val * 1000);
             var activity = GetCurrentAction(nameof(WaitFirst));
             activity.AddTag("action", nameof(WaitFirst));
-            activity.AddTag("id", id);
 
             TelemetrySpan ts;
 
@@ -60,19 +59,19 @@ namespace TestBackEnd.Controllers
             {
 
                 activity.Stop();
-                return $"This is {id}";
+                return $"This is ";
                 
             }
         }
-        [HttpGet("{id}")]
-        public async Task<string> GetActivityFirst(string id)
+        [HttpGet()]
+        public async Task<string> GetActivityFirst()
         {
             var rng = new Random();
             var val = rng.Next(5, 15);
             
             var activity = GetCurrentAction(nameof(GetActivityFirst));
             activity.AddTag("action", nameof(WaitFirst));
-            activity.AddTag("id", id);
+            
 
             await Task.Delay(val* 1000);
             

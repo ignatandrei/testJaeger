@@ -9,6 +9,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
 
 namespace TestConsole
 {
@@ -64,6 +66,47 @@ namespace TestConsole
             }
             //wait for jaeger to send data
             Console.ReadLine();
+
+            // test multiple async
+            var activityMultiple = new Activity("Multiple from console").Start();
+
+            activityMultiple .AddBaggage("MyTraceId", activityMultiple.TraceId.ToHexString());
+            activityMultiple .AddBaggage("MySpanId", activityMultiple.SpanId.ToHexString());
+            activity.AddTag("fromConsole", "Console");
+            TelemetrySpan tsMultiple;//= tracer.StartSpanFromActivity("muop", activity);
+
+            using (var span = tracer.StartActiveSpanFromActivity(activityMultiple.OperationName, activityMultiple, SpanKind.Client, out tsMultiple))
+            {
+                tsMultiple.SetAttribute("orgId", "test multiple console" + DateTime.Now.Ticks);
+                var total = MultipleRequests().GetAwaiter().GetResult();
+                activity.Stop();
+            }
+            //wait for jaeger to send data
+            Console.ReadLine();
+
+        }
+        static async Task<int> MultipleRequests()
+        {
+            var t = Enumerable.Range(1, 10).Select(
+
+                it =>
+                {
+                    string url = "TestMultiple";
+                    url += (it % 2 == 0) ? "WaitFirst" : "GetActivityFirst";
+                    return MakeRequest(url);
+                }
+                ).ToArray();
+
+            var res = await Task.WhenAll(t);
+            return res.Sum();
+
+        }
+        static async Task<int> MakeRequest(string name)
+        {
+            var hc = new HttpClient();
+            hc.BaseAddress = new Uri("http://localhost:5000/");
+            var res = await hc.GetStringAsync(name);
+            return res.Length;
 
         }
     }
