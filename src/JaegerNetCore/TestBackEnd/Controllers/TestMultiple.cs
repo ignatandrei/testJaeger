@@ -44,14 +44,18 @@ namespace TestBackEnd.Controllers
         {
             this.tracer = tracerFactory.GetTracer("TestMultiple");
         }
-
+        private Task WaitRandom()
+        {
+            var rng = new Random();
+            var val = rng.Next(1, 10);
+            return Task.Delay(val * 1000);
+            
+        }
         [HttpGet("{id}")]
         public async Task<string> WaitFirst(string id)
         {
-            return id;
-            var rng = new Random();
-            var val = rng.Next(5, 15);
-            await Task.Delay(val * 1000);
+            
+            await WaitRandom();
             var activity = GetNewActionFromCurrent(nameof(WaitFirst) + "_"+id);
             activity.AddTag("action", nameof(WaitFirst));
 
@@ -59,8 +63,11 @@ namespace TestBackEnd.Controllers
 
             using (var span = tracer.StartActiveSpanFromActivity(activity.OperationName, activity, SpanKind.Client, out ts))
             {
-
-                await SecondAction(nameof(WaitFirst) +"_"+id);
+                var together = new[]{
+                    FirstAction(nameof(GetActivityFirst) + "_" + id),
+                SecondAction(nameof(WaitFirst) + "_" + id)
+                    };
+                await Task.WhenAll(together);
                 //activity.Stop();
                 return $"This is " ;
                 
@@ -69,14 +76,12 @@ namespace TestBackEnd.Controllers
         [HttpGet("{id}")]
         public async Task<string> GetActivityFirst(string id)
         {
-            var rng = new Random();
-            var val = rng.Next(5, 15);
             
             var activity = GetNewActionFromCurrent(nameof(GetActivityFirst)+"_"+id);
             activity.AddTag("action", nameof(WaitFirst));
             
 
-            await Task.Delay(val* 1000);
+            await WaitRandom();
             
             TelemetrySpan ts;
 
@@ -92,8 +97,9 @@ namespace TestBackEnd.Controllers
             }
         }
 
-        private Task<int> FirstAction(string fromWhere)
+        private async Task<int> FirstAction(string fromWhere)
         {
+            await WaitRandom();
             var activity = GetNewActionFromCurrent(nameof(FirstAction)+ fromWhere);
             activity.AddTag("action", nameof(FirstAction));
             TelemetrySpan ts;
@@ -102,12 +108,13 @@ namespace TestBackEnd.Controllers
             {
                 //activity.Stop();
                 ts.SetAttribute("I am from", nameof(FirstAction) + fromWhere);
-                return Task.FromResult(10);
+                return 10;
 
             }
         }
-        private Task<int> SecondAction(string fromWhere)
+        private async Task<int> SecondAction(string fromWhere)
         {
+            await WaitRandom();
             var activity = GetNewActionFromCurrent(nameof(SecondAction) + fromWhere);
             activity.AddTag("action", nameof(SecondAction));
             TelemetrySpan ts;
@@ -116,7 +123,7 @@ namespace TestBackEnd.Controllers
             {
                 ts.SetAttribute("I am from", nameof(SecondAction) + fromWhere);
                 //activity.Stop();
-                return Task.FromResult(10);
+                return 10;
 
             }
         }
