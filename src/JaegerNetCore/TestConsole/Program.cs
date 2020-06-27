@@ -14,6 +14,9 @@ using System.Threading.Tasks;
 
 namespace TestConsole
 {
+    /// <summary>
+    /// https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md
+    /// </summary>
     class Program
     {
         static void Main(string[] args)
