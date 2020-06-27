@@ -15,21 +15,22 @@ namespace TestBackEnd.Controllers
     public class TestMultipleController : ControllerBase
     {
         private Tracer tracer;
-        private Activity GetCurrentAction(string name)
+        private Activity GetNewActionFromCurrent(string name)
         {
             var curent = Activity.Current;
+
             var traceId = curent.TraceId;
             var spanId = curent.SpanId;
-            if (curent.Baggage.Count(it => it.Key == "MyTraceId") > 0)
+            if (curent?.Baggage.Count(it => it.Key == "MyTraceId") > 0)
             {
 
                 traceId = ActivityTraceId.CreateFromString(curent.GetBaggageItem("MyTraceId"));
                 spanId = ActivitySpanId.CreateFromString(curent.GetBaggageItem("MySpanId"));
             }
 
-            var activity = new Activity(name)
-                        .SetParentId(traceId, spanId)
-                        .Start();
+            var activity = new Activity(name)            
+                .SetParentId(traceId, spanId)
+                .Start();
 
             activity.AddBaggage("MyTraceId", activity.TraceId.ToHexString());
             activity.AddBaggage("MySpanId", activity.SpanId.ToHexString());
@@ -44,13 +45,14 @@ namespace TestBackEnd.Controllers
             this.tracer = tracerFactory.GetTracer("TestMultiple");
         }
 
-        [HttpGet()]
-        public async Task<string> WaitFirst()
+        [HttpGet("{id}")]
+        public async Task<string> WaitFirst(string id)
         {
+            return id;
             var rng = new Random();
             var val = rng.Next(5, 15);
             await Task.Delay(val * 1000);
-            var activity = GetCurrentAction(nameof(WaitFirst));
+            var activity = GetNewActionFromCurrent(nameof(WaitFirst) + "_"+id);
             activity.AddTag("action", nameof(WaitFirst));
 
             TelemetrySpan ts;
@@ -58,19 +60,19 @@ namespace TestBackEnd.Controllers
             using (var span = tracer.StartActiveSpanFromActivity(activity.OperationName, activity, SpanKind.Client, out ts))
             {
 
-                await SecondAction(nameof(WaitFirst));
-                activity.Stop();
+                await SecondAction(nameof(WaitFirst) +"_"+id);
+                //activity.Stop();
                 return $"This is " ;
                 
             }
         }
-        [HttpGet()]
-        public async Task<string> GetActivityFirst()
+        [HttpGet("{id}")]
+        public async Task<string> GetActivityFirst(string id)
         {
             var rng = new Random();
             var val = rng.Next(5, 15);
             
-            var activity = GetCurrentAction(nameof(GetActivityFirst));
+            var activity = GetNewActionFromCurrent(nameof(GetActivityFirst)+"_"+id);
             activity.AddTag("action", nameof(WaitFirst));
             
 
@@ -80,22 +82,38 @@ namespace TestBackEnd.Controllers
 
             using (var span = tracer.StartActiveSpanFromActivity(activity.OperationName, activity, SpanKind.Client, out ts))
             {
-                await SecondAction(nameof(GetActivityFirst));
-                activity.Stop();
+                await FirstAction(nameof(GetActivityFirst) + "_" + id);
+                await SecondAction(nameof(GetActivityFirst)+"_"+id);
+                //activity.Stop();
                 return "This is ";
                 
             }
         }
 
-        private Task<int> SecondAction(string fromWhere)
+        private Task<int> FirstAction(string fromWhere)
         {
-            var activity = GetCurrentAction(nameof(SecondAction)+" from "+ fromWhere);
-            activity.AddTag("action", nameof(SecondAction));
+            var activity = GetNewActionFromCurrent(nameof(FirstAction)+ fromWhere);
+            activity.AddTag("action", nameof(FirstAction));
             TelemetrySpan ts;
 
             using (var span = tracer.StartActiveSpanFromActivity(activity.OperationName, activity, SpanKind.Client, out ts))
             {
-                activity.Stop();
+                //activity.Stop();
+                ts.SetAttribute("I am from", nameof(FirstAction) + fromWhere);
+                return Task.FromResult(10);
+
+            }
+        }
+        private Task<int> SecondAction(string fromWhere)
+        {
+            var activity = GetNewActionFromCurrent(nameof(SecondAction) + fromWhere);
+            activity.AddTag("action", nameof(SecondAction));
+            TelemetrySpan ts;
+            
+            using (var span = tracer.StartActiveSpanFromActivity(activity.OperationName, activity, SpanKind.Client, out ts))
+            {
+                ts.SetAttribute("I am from", nameof(SecondAction) + fromWhere);
+                //activity.Stop();
                 return Task.FromResult(10);
 
             }

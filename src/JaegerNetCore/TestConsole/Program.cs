@@ -96,6 +96,7 @@ namespace TestConsole
                 {
                     string url = "api/TestMultiple/";
                     url += (it % 2 == 0) ? "WaitFirst" : "GetActivityFirst";
+                    url += "/" + it;
                     return MakeRequest(url);
                 }
                 ).ToArray();
