@@ -16,6 +16,8 @@ namespace TestConsole
 {
     /// <summary>
     /// https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md
+    /// https://jimmybogard.com/building-end-to-end-diagnostics-visualizations-with-exporters/
+    /// https://jimmybogard.com/building-end-to-end-diagnostics-user-defined-context-with-correlation-context/
     /// </summary>
     class Program
     {
