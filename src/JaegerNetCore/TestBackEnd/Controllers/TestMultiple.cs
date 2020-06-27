@@ -82,7 +82,9 @@ namespace TestBackEnd.Controllers
 
             using (var span = tracer.StartActiveSpanFromActivity(activity.OperationName, activity, SpanKind.Client, out ts))
             {
+                var actDelay = Activity.Current;
                 await FirstAction(nameof(GetActivityFirst) + "_" + id);
+                Activity.Current = actDelay;
                 await SecondAction(nameof(GetActivityFirst)+"_"+id);
                 //activity.Stop();
                 return "This is ";
