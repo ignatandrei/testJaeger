@@ -88,7 +88,7 @@ namespace TestConsole
                 var total = MultipleRequests().GetAwaiter().GetResult();
                 activity.Stop();
             }
-            Console.WriteLine("sent multiple data");
+            Console.WriteLine("sent multiple data - now look into Jaeger");
             //wait for jaeger to send data
             Console.ReadLine();
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -15,7 +16,10 @@ namespace TestBackEnd.Controllers
     public class TestMultipleController : ControllerBase
     {
         private Tracer tracer;
-        private Activity GetNewActionFromCurrent(string name)
+        private Activity GetNewActionFromCurrent(string name,
+            [CallerMemberName] string memberName = "",
+            [CallerFilePath] string sourceFilePath = "",
+            [CallerLineNumber] int sourceLineNumber = 0)
         {
             var curent = Activity.Current;
 
@@ -34,6 +38,9 @@ namespace TestBackEnd.Controllers
 
             activity.AddBaggage("MyTraceId", activity.TraceId.ToHexString());
             activity.AddBaggage("MySpanId", activity.SpanId.ToHexString());
+            activity.AddTag("CallerMemberName", memberName);
+            activity.AddTag("CallerFilePath", sourceFilePath);
+            activity.AddTag("CallerLineNumber", sourceLineNumber.ToString());
 
 
             return activity;
