@@ -51,10 +51,10 @@ namespace TestBackEnd.Controllers
         {
             this.tracer = tracerFactory.GetTracer("TestMultiple");
         }
-        private Task WaitRandom()
+        private Task WaitRandom(int val)
         {
-            var rng = new Random();
-            var val = rng.Next(1, 10);
+            //var rng = new Random();
+            //var val = rng.Next(1, 10);
             return Task.Delay(val * 1000);
             
         }
@@ -62,7 +62,7 @@ namespace TestBackEnd.Controllers
         public async Task<string> WaitFirst(string id)
         {
             
-            await WaitRandom();
+            await WaitRandom(2);
             var activity = GetNewActionFromCurrent(nameof(WaitFirst) + "_"+id);
             activity.AddTag("action", nameof(WaitFirst));
 
@@ -85,10 +85,10 @@ namespace TestBackEnd.Controllers
         {
             
             var activity = GetNewActionFromCurrent(nameof(GetActivityFirst)+"_"+id);
-            activity.AddTag("action", nameof(WaitFirst));
+            activity.AddTag("action", nameof(GetActivityFirst));
             
 
-            await WaitRandom();
+            await WaitRandom(1);
             
             TelemetrySpan ts;
 
@@ -106,7 +106,7 @@ namespace TestBackEnd.Controllers
 
         private async Task<int> FirstAction(string fromWhere)
         {
-            await WaitRandom();
+            await WaitRandom(3);
             var activity = GetNewActionFromCurrent(nameof(FirstAction)+ fromWhere);
             activity.AddTag("action", nameof(FirstAction));
             TelemetrySpan ts;
@@ -121,7 +121,7 @@ namespace TestBackEnd.Controllers
         }
         private async Task<int> SecondAction(string fromWhere)
         {
-            await WaitRandom();
+            await WaitRandom(5);
             var activity = GetNewActionFromCurrent(nameof(SecondAction) + fromWhere);
             activity.AddTag("action", nameof(SecondAction));
             TelemetrySpan ts;

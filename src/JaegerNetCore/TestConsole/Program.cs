@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
 
@@ -21,7 +22,8 @@ namespace TestConsole
     /// </summary>
     class Program
     {
-        static void Main(string[] args)
+        static Tracer tracer;
+        static async Task Main(string[] args)
         {
             Console.WriteLine("Hello World!");
 
@@ -53,7 +55,7 @@ namespace TestConsole
 
                     }).BuildServiceProvider();
             var f = serviceProvider.GetRequiredService<TracerFactoryBase>();
-            var tracer = f.GetTracer("custom");
+            tracer = f.GetTracer("custom");
 
             var activity = new Activity("I am from console").Start();
 
@@ -65,7 +67,7 @@ namespace TestConsole
             using (var span = tracer.StartActiveSpanFromActivity(activity.OperationName, activity, SpanKind.Client, out ts))
             {
                 ts.SetAttribute("orgId", "test console" + DateTime.Now.Ticks);
-                var response = hc.GetStringAsync("WeatherForecast").GetAwaiter().GetResult();
+                var response = await hc.GetStringAsync("WeatherForecast");
                 Console.WriteLine(response);
                 activity.Stop();
             }
@@ -112,10 +114,51 @@ namespace TestConsole
         }
         static async Task<int> MakeRequest(string name)
         {
-            var hc = new HttpClient();
-            hc.BaseAddress = new Uri("http://localhost:5000/");
-            var res = await hc.GetStringAsync(name);
-            return res.Length;
+            // uncomment next lines
+            //var activity = GetNewActionFromCurrent();
+            //activity.AddTag("makerequest", name);
+
+            //TelemetrySpan ts;
+
+            //using (var span = tracer.StartActiveSpanFromActivity(activity.OperationName, activity, SpanKind.Client, out ts))
+            {
+
+                var hc = new HttpClient();
+                hc.BaseAddress = new Uri("http://localhost:5000/");
+                var res = await hc.GetStringAsync(name);
+                return res.Length;
+            }
+
+        }
+        static private Activity GetNewActionFromCurrent(
+            [CallerMemberName] string memberName = "",
+            [CallerFilePath] string sourceFilePath = "",
+            [CallerLineNumber] int sourceLineNumber = 0)
+        {
+            var curent = Activity.Current;
+
+            var traceId = curent.TraceId;
+            var spanId = curent.SpanId;
+            if (curent?.Baggage.Count(it => it.Key == "MyTraceId") > 0)
+            {
+
+                traceId = ActivityTraceId.CreateFromString(curent.GetBaggageItem("MyTraceId"));
+                spanId = ActivitySpanId.CreateFromString(curent.GetBaggageItem("MySpanId"));
+            }
+
+            var activity = new Activity(memberName)
+                .SetParentId(traceId, spanId)
+                .Start();
+
+            activity.AddBaggage("MyTraceId", activity.TraceId.ToHexString());
+            activity.AddBaggage("MySpanId", activity.SpanId.ToHexString());
+            activity.AddTag("CallerMemberName", memberName);
+            activity.AddTag("CallerFilePath", sourceFilePath);
+            activity.AddTag("CallerLineNumber", sourceLineNumber.ToString());
+
+
+            return activity;
+
 
         }
     }
