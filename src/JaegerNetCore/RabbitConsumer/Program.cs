@@ -1,13 +1,46 @@
 ﻿using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System;
+using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace RabbitConsumer
 {
     class Program
     {
+        static private Activity GetNewActionFromCurrent(
+            [CallerMemberName] string memberName = "",
+            [CallerFilePath] string sourceFilePath = "",
+            [CallerLineNumber] int sourceLineNumber = 0)
+        {
+            var curent = Activity.Current;
+
+            var traceId = curent.TraceId;
+            var spanId = curent.SpanId;
+            if (curent?.Baggage.Count(it => it.Key == "MyTraceId") > 0)
+            {
+
+                traceId = ActivityTraceId.CreateFromString(curent.GetBaggageItem("MyTraceId"));
+                spanId = ActivitySpanId.CreateFromString(curent.GetBaggageItem("MySpanId"));
+            }
+
+            var activity = new Activity(memberName)
+                .SetParentId(traceId, spanId)
+                .Start();
+
+            activity.AddBaggage("MyTraceId", activity.TraceId.ToHexString());
+            activity.AddBaggage("MySpanId", activity.SpanId.ToHexString());
+            activity.AddTag("CallerMemberName", memberName);
+            activity.AddTag("CallerFilePath", sourceFilePath);
+            activity.AddTag("CallerLineNumber", sourceLineNumber.ToString());
+
+
+            return activity;
+
+
+        }
         static void Main(string[] args)
         {
             var factory = new ConnectionFactory()
@@ -31,7 +64,13 @@ namespace RabbitConsumer
                     {
                         var body = ea.Body.ToArray();
                         var props = ea.BasicProperties.Headers;
-                        var f = props.FirstOrDefault();
+                        var act = GetNewActionFromCurrent();
+                        if (props?.Count(it => it.Key == "MyTraceId") > 0)
+                        {
+                            var traceid = props["MyTraceId"].ToString();
+                            var spanId = props["MySpanId"].ToString();
+                            act.SetParentId(traceid, spanId);
+                        }
                         Console.WriteLine(f.Key + f.Value);
                         var message = Encoding.UTF8.GetString(body);
                         Console.WriteLine(" [x] Received {0}", message);
