@@ -99,7 +99,7 @@ namespace RabbitConsumer
                                          autoAck: true,
                                          consumer: consumer);
 
-                    Console.WriteLine(" Press [enter] to exit.");
+                    Console.WriteLine("[Consumer] Press [enter] to exit.");
                     Console.ReadLine();
 
                 }

@@ -99,7 +99,7 @@ namespace OtherConsumer
                                          autoAck: true,
                                          consumer: consumer);
 
-                    Console.WriteLine(" Press [enter] to exit.");
+                    Console.WriteLine("[OTher] Press [enter] to exit.");
                     Console.ReadLine();
 
                 }

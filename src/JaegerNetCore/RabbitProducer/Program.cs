@@ -25,7 +25,8 @@ namespace RabbitProducer
             [CallerFilePath] string sourceFilePath = "",
             [CallerLineNumber] int sourceLineNumber = 0)
         {
-
+            //very important! to not imbricate own actions
+            Activity.Current = null;
             var activity = new Activity(memberName)
                 .Start();
 
