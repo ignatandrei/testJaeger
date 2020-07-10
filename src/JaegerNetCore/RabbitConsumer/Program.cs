@@ -26,17 +26,10 @@ namespace RabbitConsumer
             [CallerFilePath] string sourceFilePath = "",
             [CallerLineNumber] int sourceLineNumber = 0)
         {
-            var curent = Activity.Current;
+            //var curent = Activity.Current;
             
             var activity = new Activity(memberName);
-            //if(curent != null)
-            //{
-            //    var traceId = curent.TraceId;
-            //    var spanId = curent.SpanId;
-
-            //    activity.SetParentId(traceId, spanId);
-             
-            //}
+            
 
             activity.AddTag("CallerMemberName", memberName);
             activity.AddTag("CallerFilePath", sourceFilePath);
