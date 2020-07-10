@@ -81,25 +81,6 @@ namespace RabbitProducer
                 UserName = "user",
                 Password = "password"
             };
-            var connectionReceive = factory.CreateConnection();
-
-            var modelReceive = connectionReceive.CreateModel();
-
-
-            modelReceive.QueueDeclare(queue: "BackSendQueue",
-                                     durable: false,
-                                     exclusive: false,
-                                     autoDelete: false,
-                                     arguments: null);
-
-            var consumer = new EventingBasicConsumer(modelReceive);
-            consumer.Received += Producer_ReceivedSendBackQueue;
-
-
-            modelReceive.BasicConsume(queue: "BackSendQueue",
-                                         autoAck: true,
-                                         consumer: consumer);
-
 
 
             while (true)
@@ -140,7 +121,7 @@ namespace RabbitProducer
                                              basicProperties: props,
                                              body: body);
                             Console.WriteLine("FIRST message Sent {0}", message);
-                            
+
 
                         }
                     }
@@ -149,27 +130,5 @@ namespace RabbitProducer
             }
         }
 
-        private static void Producer_ReceivedSendBackQueue(object sender, BasicDeliverEventArgs ea)
-        {
-            var act = GetNewActionFromCurrent();
-            act.Start();
-            var props = ea.BasicProperties;
-            if (props != null)
-            {
-                Console.WriteLine("Received Back Trace : " + props.CorrelationId + "-!");
-                Console.WriteLine("Received Back Span : " + props.MessageId + "-!");
-                var traceidHex = props.CorrelationId;
-                var spanIdHex = props.MessageId;
-                var traceId = ActivityTraceId.CreateFromString(traceidHex);
-                var spanId = ActivitySpanId.CreateFromString(spanIdHex);
-                act.SetParentId(traceId, spanId);
-            }
-            act.Start();
-            TelemetrySpan tsMultiple;
-            using (var span = tracer.StartActiveSpanFromActivity(act.OperationName, act, SpanKind.Client, out tsMultiple))
-            {
-                Thread.Sleep(2 * 1000);
-            }
-        }
     }
 }
