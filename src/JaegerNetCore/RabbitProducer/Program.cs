@@ -5,6 +5,7 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using OpenTelemetry.Trace.Configuration;
 using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,6 +13,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RabbitProducer
@@ -26,6 +28,7 @@ namespace RabbitProducer
 
             var activity = new Activity(memberName)
                 .Start();
+
 
             activity.AddTag("CallerMemberName", memberName);
             activity.AddTag("CallerFilePath", sourceFilePath);
@@ -72,11 +75,33 @@ namespace RabbitProducer
 
 
 
-            var factory = new ConnectionFactory() {
+            var factory = new ConnectionFactory()
+            {
                 HostName = "localhost",
-                UserName ="user",
-                Password="password"
+                UserName = "user",
+                Password = "password"
             };
+            var connectionReceive = factory.CreateConnection();
+
+            var modelReceive = connectionReceive.CreateModel();
+
+
+            modelReceive.QueueDeclare(queue: "SendBackQueue",
+                                     durable: false,
+                                     exclusive: false,
+                                     autoDelete: false,
+                                     arguments: null);
+
+            var consumer = new EventingBasicConsumer(modelReceive);
+            consumer.Received += Producer_ReceivedSendBackQueue;
+
+
+            modelReceive.BasicConsume(queue: "SendBackQueue",
+                                         autoAck: true,
+                                         consumer: consumer);
+
+
+
             while (true)
             {
                 using (var connection = factory.CreateConnection())
@@ -101,8 +126,8 @@ namespace RabbitProducer
                         //props.ContentEncoding = "UTF-8";
                         props.CorrelationId = act.TraceId.ToHexString();
                         props.MessageId = act.SpanId.ToHexString();
-                        
-                        
+
+
                         TelemetrySpan tsMultiple;
                         using (var span = tracer.StartActiveSpanFromActivity(act.OperationName, act, SpanKind.Client, out tsMultiple))
                         {
@@ -121,6 +146,29 @@ namespace RabbitProducer
                     }
                 }
                 Console.ReadLine();
+            }
+        }
+
+        private static void Producer_ReceivedSendBackQueue(object sender, BasicDeliverEventArgs ea)
+        {
+            var act = GetNewActionFromCurrent();
+            act.Start();
+            var props = ea.BasicProperties;
+            if (props != null)
+            {
+                Console.WriteLine("Trace : " + props.CorrelationId + "-!");
+                Console.WriteLine("Span : " + props.MessageId + "-!");
+                var traceidHex = props.CorrelationId;
+                var spanIdHex = props.MessageId;
+                var traceId = ActivityTraceId.CreateFromString(traceidHex);
+                var spanId = ActivitySpanId.CreateFromString(spanIdHex);
+                act.SetParentId(traceId, spanId);
+            }
+            act.Start();
+            TelemetrySpan tsMultiple;
+            using (var span = tracer.StartActiveSpanFromActivity(act.OperationName, act, SpanKind.Client, out tsMultiple))
+            {
+                Thread.Sleep(2 * 1000);
             }
         }
     }
