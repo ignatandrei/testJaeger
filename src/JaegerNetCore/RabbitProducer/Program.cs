@@ -94,16 +94,20 @@ namespace RabbitProducer
                         var props = model.CreateBasicProperties();
                         var act = GetNewActionFromCurrent();
                         props.Headers = new Dictionary<string, object>();
-                        props.Headers.Add("MyTraceId", act.TraceId.ToHexString());
-                        props.Headers.Add("MySpanId", act.SpanId.ToHexString());
-                        
+                        props.ContentType= "text/plain";
+                        props.DeliveryMode = 2;//persistent
                         props.Persistent = true;
+                        props.Expiration = "36000000";
+                        props.ContentEncoding = "UTF-8";
+                        props.CorrelationId = act.TraceId.ToHexString();
+                        props.MessageId = act.SpanId.ToHexString();
+                        
+                        
                         TelemetrySpan tsMultiple;
                         using (var span = tracer.StartActiveSpanFromActivity(act.OperationName, act, SpanKind.Producer, out tsMultiple))
                         {
-                            tsMultiple.SetAttribute("LoggingTrace", act.TraceId.ToHexString());
-                            tsMultiple.SetAttribute("LoggingSpan", act.SpanId.ToHexString());
-                            tsMultiple.SetAttribute("orgId", "test multiple console" + DateTime.Now.Ticks);
+                            tsMultiple.SetAttribute("LoggingTrace", props.CorrelationId);
+                            tsMultiple.SetAttribute("LoggingSpan", props.MessageId);
 
                             model.BasicPublish(exchange: "",
                                              routingKey: "hello",

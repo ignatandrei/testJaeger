@@ -93,15 +93,14 @@ namespace RabbitConsumer
                     consumer.Received += (model, ea) =>
                     {
                         var body = ea.Body.ToArray();
-                        var props = ea.BasicProperties.Headers;
+                        var props = ea.BasicProperties;
                         var act = GetNewActionFromCurrent();
-                        //if (props?.Count(it => it.Key == "MyTraceId") > 0)
+                        if (props != null)
                         {
-                            var traceidHex = Encoding.UTF8.GetString((byte[])props["MyTraceId"]);
-                            var spanIdHex =Encoding.UTF8.GetString((byte[]) props["MySpanId"]);
+                            var traceidHex = props.CorrelationId;
+                            var spanIdHex = props.MessageId;
                             var traceId = ActivityTraceId.CreateFromString(traceidHex);
                             var spanId = ActivitySpanId.CreateFromString(spanIdHex);
-
                             act.SetParentId(traceId, spanId);
                         }
                         TelemetrySpan tsMultiple;
