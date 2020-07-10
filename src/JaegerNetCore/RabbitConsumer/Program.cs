@@ -27,8 +27,8 @@ namespace RabbitConsumer
         {
             var curent = Activity.Current;
 
-            var activity = new Activity(memberName)
-                .Start();
+            var activity = new Activity(memberName);
+               
 
             activity.AddTag("CallerMemberName", memberName);
             activity.AddTag("CallerFilePath", sourceFilePath);
@@ -93,8 +93,9 @@ namespace RabbitConsumer
                     consumer.Received += (model, ea) =>
                     {
                         var body = ea.Body.ToArray();
+                        
+                        var act = GetNewActionFromCurrent();
                         var props = ea.BasicProperties;
-                        var act = new Activity("t5es");// GetNewActionFromCurrent();
                         if (props != null)
                         {
                             Console.WriteLine("Trace : " + props.CorrelationId +"-!");
@@ -103,8 +104,9 @@ namespace RabbitConsumer
                             var spanIdHex = props.MessageId;
                             var traceId = ActivityTraceId.CreateFromString(traceidHex);
                             var spanId = ActivitySpanId.CreateFromString(spanIdHex);
-                            act.SetParentId(traceId, spanId).Start();
+                            act.SetParentId(traceId, spanId);
                         }
+                        act.Start();
                         TelemetrySpan tsMultiple;
                         using (var span = tracer.StartActiveSpanFromActivity(act.OperationName, act, SpanKind.Client, out tsMultiple))
                         {
