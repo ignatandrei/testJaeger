@@ -67,11 +67,14 @@ namespace RabbitConsumer
                         var act = GetNewActionFromCurrent();
                         if (props?.Count(it => it.Key == "MyTraceId") > 0)
                         {
-                            var traceid = props["MyTraceId"].ToString();
-                            var spanId = props["MySpanId"].ToString();
-                            act.SetParentId(traceid, spanId);
+                            var traceidHex =  props["MyTraceId"].ToString();
+                            var spanIdHex = props["MySpanId"].ToString();
+                            var traceId = ActivityTraceId.CreateFromString(traceidHex);
+                            var spanId = ActivitySpanId.CreateFromString(spanIdHex);
+
+                            act.SetParentId(traceId, spanId);
                         }
-                        Console.WriteLine(f.Key + f.Value);
+                        //Console.WriteLine(f.Key + f.Value);
                         var message = Encoding.UTF8.GetString(body);
                         Console.WriteLine(" [x] Received {0}", message);
                     };

@@ -63,8 +63,8 @@ namespace RabbitProducer
                     var props = model.CreateBasicProperties();
                     var act = GetNewActionFromCurrent();
                     props.Headers = new Dictionary<string, object>();
-                    props.Headers.Add("MyTraceId", act.TraceId);
-                    props.Headers.Add("MySpanId", act.TraceId);
+                    props.Headers.Add("MyTraceId", act.TraceId.ToHexString());
+                    props.Headers.Add("MySpanId", act.SpanId.ToHexString());
 
                     props.Persistent = true;
 
