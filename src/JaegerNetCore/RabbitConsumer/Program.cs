@@ -22,7 +22,10 @@ namespace RabbitConsumer
             [CallerLineNumber] int sourceLineNumber = 0)
         {
             var curent = Activity.Current;
-
+            if(curent == null)
+            {
+                curent = new Activity(memberName);
+            }
             var traceId = curent.TraceId;
             var spanId = curent.SpanId;
             if (curent?.Baggage.Count(it => it.Key == "MyTraceId") > 0)
@@ -104,8 +107,8 @@ namespace RabbitConsumer
                         var act = GetNewActionFromCurrent();
                         if (props?.Count(it => it.Key == "MyTraceId") > 0)
                         {
-                            var traceidHex =  props["MyTraceId"].ToString();
-                            var spanIdHex = props["MySpanId"].ToString();
+                            var traceidHex = Encoding.UTF8.GetString((byte[])props["MyTraceId"]);
+                            var spanIdHex =Encoding.UTF8.GetString((byte[]) props["MySpanId"]);
                             var traceId = ActivityTraceId.CreateFromString(traceidHex);
                             var spanId = ActivitySpanId.CreateFromString(spanIdHex);
 

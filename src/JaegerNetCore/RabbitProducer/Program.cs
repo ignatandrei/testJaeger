@@ -1,10 +1,18 @@
-﻿using RabbitMQ.Client;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using OpenTelemetry.Exporter.Jaeger;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
+using OpenTelemetry.Trace.Configuration;
+using RabbitMQ.Client;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace RabbitProducer
 {
@@ -15,23 +23,10 @@ namespace RabbitProducer
             [CallerFilePath] string sourceFilePath = "",
             [CallerLineNumber] int sourceLineNumber = 0)
         {
-            var curent = Activity.Current;
-
-            var traceId = curent.TraceId;
-            var spanId = curent.SpanId;
-            if (curent?.Baggage.Count(it => it.Key == "MyTraceId") > 0)
-            {
-
-                traceId = ActivityTraceId.CreateFromString(curent.GetBaggageItem("MyTraceId"));
-                spanId = ActivitySpanId.CreateFromString(curent.GetBaggageItem("MySpanId"));
-            }
 
             var activity = new Activity(memberName)
-                .SetParentId(traceId, spanId)
                 .Start();
 
-            activity.AddBaggage("MyTraceId", activity.TraceId.ToHexString());
-            activity.AddBaggage("MySpanId", activity.SpanId.ToHexString());
             activity.AddTag("CallerMemberName", memberName);
             activity.AddTag("CallerFilePath", sourceFilePath);
             activity.AddTag("CallerLineNumber", sourceLineNumber.ToString());
@@ -41,8 +36,42 @@ namespace RabbitProducer
 
 
         }
+        static Tracer tracer;
         static void Main(string[] args)
         {
+
+            var opt = new JaegerExporterOptions();
+            var config = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json", true, true)
+                .Build();
+
+            var serviceProvider = new ServiceCollection()
+                    .AddLogging()
+                    .AddSingleton<IConfiguration>(config)
+                    .AddOpenTelemetry(b =>
+                    {
+                        b//.AddRequestAdapter()
+                        .UseJaeger(c =>
+                        {
+                            var s = config.GetSection("Jaeger");
+
+                            s.Bind(c);
+
+
+                        });
+                        var x = new Dictionary<string, object>() {
+                            { "PC", Environment.MachineName } };
+                        b.SetResource(new Resource(x.ToArray()));
+
+                    }).BuildServiceProvider();
+            var f = serviceProvider.GetRequiredService<TracerFactoryBase>();
+            tracer = f.GetTracer("custom");
+
+
+
+
+
+
             var factory = new ConnectionFactory() {
                 HostName = "localhost",
                 UserName ="user",
