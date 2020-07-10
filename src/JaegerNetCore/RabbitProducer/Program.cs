@@ -96,12 +96,13 @@ namespace RabbitProducer
                         props.Headers = new Dictionary<string, object>();
                         props.Headers.Add("MyTraceId", act.TraceId.ToHexString());
                         props.Headers.Add("MySpanId", act.SpanId.ToHexString());
-
+                        
                         props.Persistent = true;
                         TelemetrySpan tsMultiple;
                         using (var span = tracer.StartActiveSpanFromActivity(act.OperationName, act, SpanKind.Producer, out tsMultiple))
                         {
-
+                            tsMultiple.SetAttribute("LoggingTrace", act.TraceId.ToHexString());
+                            tsMultiple.SetAttribute("LoggingSpan", act.SpanId.ToHexString());
                             tsMultiple.SetAttribute("orgId", "test multiple console" + DateTime.Now.Ticks);
 
                             model.BasicPublish(exchange: "",

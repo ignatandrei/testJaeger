@@ -107,6 +107,9 @@ namespace RabbitConsumer
                         TelemetrySpan tsMultiple;
                         using (var span = tracer.StartActiveSpanFromActivity(act.OperationName, act, SpanKind.Producer, out tsMultiple))
                         {
+                            tsMultiple.SetAttribute("LoggingTrace", act.TraceId.ToHexString());
+                            tsMultiple.SetAttribute("LoggingSpan", act.SpanId.ToHexString());
+
                             //Console.WriteLine(f.Key + f.Value);
                             var message = Encoding.UTF8.GetString(body);
                             tsMultiple.SetAttribute("message received", message);
