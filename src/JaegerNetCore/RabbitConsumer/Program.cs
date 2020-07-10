@@ -1,6 +1,12 @@
-﻿using RabbitMQ.Client;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using OpenTelemetry.Exporter.Jaeger;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
+using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -41,8 +47,39 @@ namespace RabbitConsumer
 
 
         }
+        static Tracer tracer;
         static void Main(string[] args)
         {
+
+            var opt = new JaegerExporterOptions();
+            var config = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json", true, true)
+                .Build();
+
+            var serviceProvider = new ServiceCollection()
+                    .AddLogging()
+                    .AddSingleton<IConfiguration>(config)
+                    .AddOpenTelemetry(b =>
+                    {
+                        //b//.AddRequestAdapter()
+                       //.UseJaeger(c =>
+                       //{
+                       //    var s = config.GetSection("Jaeger");
+
+                       //    s.Bind(c);
+
+
+                       //});
+                        var x = new Dictionary<string, object>() {
+                            { "PC", Environment.MachineName } };
+                        b.SetResource(new Resource(x.ToArray()));
+
+                    }).BuildServiceProvider();
+            var f = serviceProvider.GetRequiredService<TracerFactoryBase>();
+            tracer = f.GetTracer("custom");
+
+
+
             var factory = new ConnectionFactory()
             {
                 HostName = "localhost",
