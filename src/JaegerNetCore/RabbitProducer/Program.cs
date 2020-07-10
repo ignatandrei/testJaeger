@@ -98,12 +98,20 @@ namespace RabbitProducer
                         props.Headers.Add("MySpanId", act.SpanId.ToHexString());
 
                         props.Persistent = true;
+                        TelemetrySpan tsMultiple;
+                        using (var span = tracer.StartActiveSpanFromActivity(act.OperationName, act, SpanKind.Producer, out tsMultiple))
+                        {
 
-                        model.BasicPublish(exchange: "",
+                            tsMultiple.SetAttribute("orgId", "test multiple console" + DateTime.Now.Ticks);
+
+                            model.BasicPublish(exchange: "",
                                              routingKey: "hello",
                                              basicProperties: props,
                                              body: body);
-                        Console.WriteLine(" [x] Sent {0}", message);
+                            Console.WriteLine(" [x] Sent {0}", message);
+                            act.Stop();
+
+                        }
                     }
                 }
                 Console.ReadLine();

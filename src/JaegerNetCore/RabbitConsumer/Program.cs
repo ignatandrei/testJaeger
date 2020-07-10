@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using OpenTelemetry.Exporter.Jaeger;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using OpenTelemetry.Trace.Configuration;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System;
@@ -10,7 +11,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
+using System.Threading.Tasks;
+
 
 namespace RabbitConsumer
 {
@@ -22,25 +26,10 @@ namespace RabbitConsumer
             [CallerLineNumber] int sourceLineNumber = 0)
         {
             var curent = Activity.Current;
-            if(curent == null)
-            {
-                curent = new Activity(memberName);
-            }
-            var traceId = curent.TraceId;
-            var spanId = curent.SpanId;
-            if (curent?.Baggage.Count(it => it.Key == "MyTraceId") > 0)
-            {
-
-                traceId = ActivityTraceId.CreateFromString(curent.GetBaggageItem("MyTraceId"));
-                spanId = ActivitySpanId.CreateFromString(curent.GetBaggageItem("MySpanId"));
-            }
 
             var activity = new Activity(memberName)
-                .SetParentId(traceId, spanId)
                 .Start();
 
-            activity.AddBaggage("MyTraceId", activity.TraceId.ToHexString());
-            activity.AddBaggage("MySpanId", activity.SpanId.ToHexString());
             activity.AddTag("CallerMemberName", memberName);
             activity.AddTag("CallerFilePath", sourceFilePath);
             activity.AddTag("CallerLineNumber", sourceLineNumber.ToString());
@@ -64,15 +53,15 @@ namespace RabbitConsumer
                     .AddSingleton<IConfiguration>(config)
                     .AddOpenTelemetry(b =>
                     {
-                        //b//.AddRequestAdapter()
-                       //.UseJaeger(c =>
-                       //{
-                       //    var s = config.GetSection("Jaeger");
+                        b//.AddRequestAdapter()
+                       .UseJaeger(c =>
+                       {
+                           var s = config.GetSection("Jaeger");
 
-                       //    s.Bind(c);
+                           s.Bind(c);
 
 
-                       //});
+                       });
                         var x = new Dictionary<string, object>() {
                             { "PC", Environment.MachineName } };
                         b.SetResource(new Resource(x.ToArray()));
@@ -114,9 +103,14 @@ namespace RabbitConsumer
 
                             act.SetParentId(traceId, spanId);
                         }
-                        //Console.WriteLine(f.Key + f.Value);
-                        var message = Encoding.UTF8.GetString(body);
-                        Console.WriteLine(" [x] Received {0}", message);
+                        TelemetrySpan tsMultiple;
+                        using (var span = tracer.StartActiveSpanFromActivity(act.OperationName, act, SpanKind.Producer, out tsMultiple))
+                        {
+                            //Console.WriteLine(f.Key + f.Value);
+                            var message = Encoding.UTF8.GetString(body);
+                            tsMultiple.SetAttribute("message received", message);
+                            Console.WriteLine(" [x] Received {0}", message);
+                        }
                     };
                     channel.BasicConsume(queue: "hello",
                                          autoAck: true,
