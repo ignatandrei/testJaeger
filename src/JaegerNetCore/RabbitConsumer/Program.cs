@@ -115,8 +115,8 @@ namespace RabbitConsumer
             var props = ea.BasicProperties;
             if (props != null)
             {
-                Console.WriteLine("Trace : " + props.CorrelationId + "-!");
-                Console.WriteLine("Span : " + props.MessageId + "-!");
+                Console.WriteLine("Received Trace : " + props.CorrelationId + "-!");
+                Console.WriteLine("Received Span : " + props.MessageId + "-!");
                 var traceidHex = props.CorrelationId;
                 var spanIdHex = props.MessageId;
                 var traceId = ActivityTraceId.CreateFromString(traceidHex);
@@ -178,8 +178,8 @@ namespace RabbitConsumer
 
                         tsMultiple.SetAttribute("LoggingTrace", props.CorrelationId);
                         tsMultiple.SetAttribute("LoggingSpan", props.MessageId);
-                        Console.WriteLine("Trace : " + props.CorrelationId);
-                        Console.WriteLine("Span : " + props.MessageId);
+                        Console.WriteLine("Sent Trace : " + props.CorrelationId);
+                        Console.WriteLine("Sent Span : " + props.MessageId);
                         model.BasicPublish(exchange: "",
                                          routingKey: "BackSendQueue",
                                          basicProperties: props,

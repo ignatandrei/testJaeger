@@ -139,8 +139,8 @@ namespace RabbitProducer
                                              routingKey: "hello",
                                              basicProperties: props,
                                              body: body);
-                            Console.WriteLine(" [x] Sent {0}", message);
-                            act.Stop();
+                            Console.WriteLine("FIRST message Sent {0}", message);
+                            
 
                         }
                     }
@@ -156,8 +156,8 @@ namespace RabbitProducer
             var props = ea.BasicProperties;
             if (props != null)
             {
-                Console.WriteLine("Back Trace : " + props.CorrelationId + "-!");
-                Console.WriteLine("Back Span : " + props.MessageId + "-!");
+                Console.WriteLine("Received Back Trace : " + props.CorrelationId + "-!");
+                Console.WriteLine("Received Back Span : " + props.MessageId + "-!");
                 var traceidHex = props.CorrelationId;
                 var spanIdHex = props.MessageId;
                 var traceId = ActivityTraceId.CreateFromString(traceidHex);
