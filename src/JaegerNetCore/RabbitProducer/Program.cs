@@ -86,7 +86,7 @@ namespace RabbitProducer
             var modelReceive = connectionReceive.CreateModel();
 
 
-            modelReceive.QueueDeclare(queue: "SendBackQueue",
+            modelReceive.QueueDeclare(queue: "BackSendQueue",
                                      durable: false,
                                      exclusive: false,
                                      autoDelete: false,
@@ -96,7 +96,7 @@ namespace RabbitProducer
             consumer.Received += Producer_ReceivedSendBackQueue;
 
 
-            modelReceive.BasicConsume(queue: "SendBackQueue",
+            modelReceive.BasicConsume(queue: "BackSendQueue",
                                          autoAck: true,
                                          consumer: consumer);
 
@@ -156,8 +156,8 @@ namespace RabbitProducer
             var props = ea.BasicProperties;
             if (props != null)
             {
-                Console.WriteLine("Trace : " + props.CorrelationId + "-!");
-                Console.WriteLine("Span : " + props.MessageId + "-!");
+                Console.WriteLine("Back Trace : " + props.CorrelationId + "-!");
+                Console.WriteLine("Back Span : " + props.MessageId + "-!");
                 var traceidHex = props.CorrelationId;
                 var spanIdHex = props.MessageId;
                 var traceId = ActivityTraceId.CreateFromString(traceidHex);
