@@ -94,21 +94,23 @@ namespace RabbitConsumer
                     {
                         var body = ea.Body.ToArray();
                         var props = ea.BasicProperties;
-                        var act = GetNewActionFromCurrent();
+                        var act = new Activity("t5es");// GetNewActionFromCurrent();
                         if (props != null)
                         {
+                            Console.WriteLine("Trace : " + props.CorrelationId +"-!");
+                            Console.WriteLine("Span : " + props.MessageId + "-!");
                             var traceidHex = props.CorrelationId;
                             var spanIdHex = props.MessageId;
                             var traceId = ActivityTraceId.CreateFromString(traceidHex);
                             var spanId = ActivitySpanId.CreateFromString(spanIdHex);
-                            act.SetParentId(traceId, spanId);
+                            act.SetParentId(traceId, spanId).Start();
                         }
                         TelemetrySpan tsMultiple;
-                        using (var span = tracer.StartActiveSpanFromActivity(act.OperationName, act, SpanKind.Producer, out tsMultiple))
+                        using (var span = tracer.StartActiveSpanFromActivity(act.OperationName, act, SpanKind.Client, out tsMultiple))
                         {
-                            tsMultiple.SetAttribute("LoggingTrace", act.TraceId.ToHexString());
-                            tsMultiple.SetAttribute("LoggingSpan", act.SpanId.ToHexString());
-
+                            //tsMultiple.SetAttribute("LoggingTrace", act.TraceId.ToHexString());
+                            //tsMultiple.SetAttribute("LoggingSpan", act.SpanId.ToHexString());
+                            
                             //Console.WriteLine(f.Key + f.Value);
                             var message = Encoding.UTF8.GetString(body);
                             tsMultiple.SetAttribute("message received", message);
